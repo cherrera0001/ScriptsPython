@@ -1,25 +1,16 @@
 import requests
 import urllib.parse
 
-# URL a analizar
-url = "URL"
+# Recibir la URL a analizar
+url = input("Ingrese la URL a analizar: ")
 
-# Dividir la URL en sus componentes
+# Decodificar la URL
 parsed_url = urllib.parse.urlparse(url)
-
-# Obtener los parámetros de la URL
 query_list = urllib.parse.parse_qsl(parsed_url.query)
-
-# Decodificar los valores de los parámetros
 decoded_query_list = [(key, urllib.parse.unquote(value)) for key, value in query_list]
 
-# Imprimir los atributos y valores de la URL
-print('Variables y parámetros:')
-for key, value in decoded_query_list:
-    print(key, ':', value)
-
-# Volver a armar la URL con los mismos componentes
-new_url = urllib.parse.urlunparse((parsed_url.scheme, parsed_url.netloc, parsed_url.path, parsed_url.params, urllib.parse.urlencode(query_list), parsed_url.fragment))
+# Armar la nueva URL decodificada
+new_url = urllib.parse.urlunparse((parsed_url.scheme, parsed_url.netloc, parsed_url.path, parsed_url.params, urllib.parse.urlencode(decoded_query_list), parsed_url.fragment))
 
 # Imprimir la nueva URL
 print('Nueva URL:')
@@ -34,4 +25,6 @@ proxies = {
 # Hacer una solicitud HTTP a través del proxy
 response = requests.get(new_url, proxies=proxies, verify=False)
 
+# Imprimir la respuesta del proxy
 print(response.content)
+
