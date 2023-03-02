@@ -26,10 +26,12 @@ print('Nueva URL:')
 print(new_url)
 
 # Configurar los proxies
-proxy_url = 'http://127.0.0.1:8080'
+proxies = {
+  'http': 'http://127.0.0.1:8080',
+  'https': 'https://127.0.0.1:8080'
+}
 
-# Construir la URL decodificada y enviar la petición al proxy
-proxy_params = dict(decoded_query_list)
-response = requests.get(proxy_url, params=proxy_params, verify=False)
+# Hacer una solicitud HTTP a través del proxy
+response = requests.get(new_url, proxies=proxies, verify=False)
 
 print(response.content)
