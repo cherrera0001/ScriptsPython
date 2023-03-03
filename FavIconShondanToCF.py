@@ -26,9 +26,9 @@ import requests
 import codecs
 import sys
 import shodan
+import glob
 
-
-SHODAN_API_KEY = "YOUR_API_KEY"
+SHODAN_API_KEY = "AQUI_TU_API_KEY"
 
 def main():
     if len(sys.argv) < 2:
@@ -36,37 +36,44 @@ def main():
         print(f"[-] Use: python3 {sys.argv[0]} <hostname>")
         sys.exit()
 
-    # Buscar favicon en el host especificado
-    favicon_url = f"http://{sys.argv[1]}/favicon.ico"
-    favicon_data = get_favicon(favicon_url)
+    # Buscar cualquier archivo con extensión .ico en la URL especificada
+    favicon_url = f"http://{sys.argv[1]}/*.ico"
+    favicon_files = glob.glob(favicon_url)
 
-    favicon = codecs.encode(favicon_data, "base64")
-    hash_favicon = mmh3.hash(favicon)
+    # Verificar si se encontró algún archivo con extensión .ico
+    if len(favicon_files) > 0:
+        favicon_list = []
+        for file in favicon_files:
+            favicon_data = get_favicon(file)
+            favicon_hash = mmh3.hash(favicon_data)
+            favicon_list.append((file, favicon_hash))
 
-    # Realizar consulta a Shodan para encontrar hosts con el mismo favicon
-    api = shodan.Shodan(SHODAN_API_KEY)
-    query = f"http.favicon.hash:{hash_favicon}"
-    results = api.search(query)
+        # Realizar consulta a Shodan para encontrar hosts con el mismo favicon
+        api = shodan.Shodan(SHODAN_API_KEY)
+        for file, hash_favicon in favicon_list:
+            query = f"http.favicon.hash:{hash_favicon}"
+            results = api.search(query)
 
-    # Obtener dirección IP real del host detrás de Cloudflare
-    for result in results["matches"]:
-        ip = result["ip_str"]
-        headers = {"Host": sys.argv[1]}
-        url = f"http://{ip}/favicon.ico"
-        try:
-            response = requests.get(url, headers=headers, verify=False, proxies={"http": "http://127.0.0.1:8080"})
-            if response.status_code == 200 and response.content == favicon_data:
-                print(f"[+] Hostname: {sys.argv[1]}")
-                print(f"[+] IP address: {ip}")
-                break
-        except:
-            pass
+            # Obtener dirección IP real del host detrás de Cloudflare
+            for result in results["matches"]:
+                ip = result["ip_str"]
+                headers = {"Host": sys.argv[1]}
+                url = f"http://{ip}/{file}"
+                try:
+                    response = requests.get(url, headers=headers, verify=False, proxies={"http": "http://127.0.0.1:8080"})
+                    if response.status_code == 200 and response.content == get_favicon(file):
+                        print(f"[+] Hostname: {sys.argv[1]}")
+                        print(f"[+] IP address: {ip}")
+                        break
+                except:
+                    pass
+    else:
+        print("No se pudo encontrar ningún archivo .ico en la URL especificada.")
 
-def get_favicon(favicon_url):
+def get_favicon(favicon_file):
     try:
-        response = requests.get(favicon_url, verify=False, proxies={"http": "http://127.0.0.1:8080"})
-        if response.status_code == 200:
-            return response.content
+        with open(favicon_file, "rb") as f:
+            return f.read()
     except:
         pass
 
