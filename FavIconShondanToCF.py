@@ -37,8 +37,12 @@ def main():
     # Buscar favicon en el host especificado
     favicon_url = f"http://{sys.argv[1]}/favicon.ico"
     favicon_data = get_favicon(favicon_url)
-    print(f"[+] Favicon data: {favicon_data}")
+    if not favicon_data:
+        print("[!] Error!")
+        print(f"[-] No se pudo obtener el favicon desde {favicon_url}")
+        sys.exit()
 
+    print(f"[+] Favicon data: {favicon_data}")
     favicon = codecs.encode(favicon_data, "base64")
     print(f"[+] Encoded favicon: {favicon}")
     hash_favicon = mmh3.hash(favicon)
@@ -76,3 +80,4 @@ def get_favicon(favicon_url):
 
 if __name__ == '__main__':
     main()
+
