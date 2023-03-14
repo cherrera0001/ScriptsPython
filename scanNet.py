@@ -29,10 +29,19 @@ for ip in range(1, 255):
             
             # recibe la respuesta del servicio
             response = client.recv(4096)
+
+        # analiza la respuesta para determinar el servicio que está en ejecución
+        if "HTTP" in response:
+           service = "HTTP"
+        elif "SSH" in response:
+            service = "SSH"
+        elif "SMTP" in response:
+            service = "SMTP"
+        else:
+            service = "Unknown"
             
-            # analiza la respuesta para determinar el servicio que está en ejecución
-            if "HTTP" in response:
-                service = "HTTP"
-            elif "SSH" in response:
-                service = "SSH"
-            elif "
+            # imprime los resultados
+for result in results:
+    print(result['ip'], ":", result['port'], "(", result['service'], ")")
+
+
