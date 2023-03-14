@@ -40,8 +40,20 @@ for ip in range(1, 255):
         else:
             service = "Unknown"
             
-            # imprime los resultados
-for result in results:
-    print(result['ip'], ":", result['port'], "(", result['service'], ")")
+            # guarda el resultado en la lista de resultados
+            result = {
+                "ip": ip_range + str(ip),
+                "port": port,
+                "service": service
+            }
+            results.append(result)
+            
+            client.close()
+            
+        except:
+            pass
 
+# imprime los resultados
+for result in results:
+    print(result)
 
