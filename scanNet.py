@@ -1,3 +1,5 @@
+#Test to scan all ip on range net.
+
 import socket
 
 # define el rango de direcciones IP a escanear
