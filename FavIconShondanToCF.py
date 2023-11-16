@@ -5,10 +5,12 @@ import sys
 import shodan
 from urllib.parse import urlparse
 
+# Clave de API para Shodan y configuración del proxy
 SHODAN_API_KEY = "xPauT6WwgMaXt4uIXv25LATSEegLF6AE"
-PROXY = "http://127.0.0.1:8080"  # Configuración del Proxy
+PROXY = "http://127.0.0.1:8080"  # Ajusta esta dirección a tu configuración de proxy
 
 def is_valid_url(url):
+    # Valida si la URL proporcionada tiene un formato adecuado
     try:
         result = urlparse(url)
         return all([result.scheme, result.netloc])
@@ -16,6 +18,7 @@ def is_valid_url(url):
         return False
 
 def get_favicon(favicon_url, session):
+    # Descarga el favicon del sitio web y maneja excepciones
     try:
         proxies = {
             "http": PROXY,
@@ -32,6 +35,7 @@ def get_favicon(favicon_url, session):
         return None
 
 def main():
+    # Proceso principal del script
     if len(sys.argv) < 2 or not is_valid_url(sys.argv[1]):
         print("[!] Error!")
         print(f"[-] Use: python3 {sys.argv[0]} <url>")
@@ -43,7 +47,7 @@ def main():
     port = f":{parsed_url.port}" if parsed_url.port else ""
     favicon_url = f"{scheme}://{hostname}{port}/favicon.ico"
 
-    session = requests.Session()
+    session = requests.Session()  # Usando sesiones para conexiones persistentes
     session.proxies = {
         "http": PROXY,
         "https": PROXY
@@ -53,22 +57,24 @@ def main():
     if favicon_data is None:
         sys.exit()
 
+    # Codificar el favicon en base64 y calcular su hash MurmurHash3
     favicon = codecs.encode(favicon_data, "base64")
     hash_favicon = mmh3.hash(favicon)
     print(f"[+] Favicon hash: {hash_favicon}")
 
+    # Realizar consulta a Shodan con el hash del favicon
     try:
         api = shodan.Shodan(SHODAN_API_KEY)
         query = f"http.favicon.hash:{hash_favicon}"
         print(f"[+] Shodan query: {query}")
         results = api.search(query)
+        # Imprimir resultados detallados de Shodan
         print("[+] Resultados de Shodan:", results)
     except Exception as e:
         print(f"[!] Error al buscar en Shodan: {e}")
         sys.exit()
 
-    # Aquí puedes agregar código adicional para manejar los resultados de Shodan, si lo deseas.
+    # Puedes agregar más código aquí para manejar o procesar los resultados de Shodan
 
 if __name__ == '__main__':
     main()
-             
