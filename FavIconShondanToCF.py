@@ -1,83 +1,74 @@
-#Este código Python realiza una búsqueda de hosts en Shodan que comparten el mismo favicon que un sitio web especificado 
-#por el usuario. A continuación, trata de obtener la dirección IP real detrás de Cloudflare del host que coincide con el 
-#favicon mediante el uso de una técnica de resolución de DNS inversa.
-#A continuación, explicaré en detalle las partes del código:
-#    import - Importa los módulos necesarios para que el programa funcione, incluyendo mmh3 para generar un hash del favicon, 
-#             requests para hacer solicitudes HTTP, codecs para codificar y decodificar datos y shodan para acceder a la API de Shodan.
-#
-#    SHODAN_API_KEY - La clave de API de Shodan utilizada para hacer consultas a la API de Shodan.
-#
-#    main() - La función principal del programa. Verifica si se proporciona un nombre de host, busca el favicon en el sitio 
-#              web especificado, genera un hash del favicon, realiza una consulta a la API de Shodan para encontrar hosts con 
-#                el mismo hash de favicon y finalmente obtiene la dirección IP real del host detrás de Cloudflare.
-#
-#    get_favicon(favicon_url) - La función que se encarga de descargar el favicon del sitio web especificado.
-#
-#    if __name__ == '__main__': - La línea de código que inicia la ejecución del programa.
-
-#En resumen, este código es un ejemplo de cómo se puede utilizar la API de Shodan y técnicas de resolución de 
-#DNS inversa para obtener la dirección IP real detrás de Cloudflare de un sitio web y encontrar hosts que comparten el 
-#mismo favicon. Sin embargo, es importante tener en cuenta que esta técnica no siempre funciona y que puede haber otras medidas 
-#de protección que impidan que se descubra la dirección IP real del servidor de origen.
-
 import mmh3
 import requests
 import codecs
 import sys
 import shodan
+from urllib.parse import urlparse
 
-SHODAN_API_KEY = "AQUI_TU_API_KEY"
+SHODAN_API_KEY = "xPauT6WwgMaXt4uIXv25LATSEegLF6AE"
+PROXY = "http://127.0.0.1:8080"  # Configuración del Proxy
+
+def is_valid_url(url):
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc])
+    except:
+        return False
+
+def get_favicon(favicon_url, session):
+    try:
+        proxies = {
+            "http": PROXY,
+            "https": PROXY
+        }
+        response = session.get(favicon_url, verify=False, proxies=proxies, timeout=20)
+        if response.status_code == 200:
+            return response.content
+        else:
+            print(f"[!] No se pudo obtener el favicon: Estado HTTP {response.status_code}")
+            return None
+    except requests.exceptions.RequestException as e:
+        print(f"[!] Error al obtener el favicon: {e}")
+        return None
 
 def main():
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 2 or not is_valid_url(sys.argv[1]):
         print("[!] Error!")
-        print(f"[-] Use: python3 {sys.argv[0]} <hostname>")
+        print(f"[-] Use: python3 {sys.argv[0]} <url>")
         sys.exit()
 
-    # Buscar favicon en el host especificado
-    favicon_url = f"http://{sys.argv[1]}/favicon.ico"
-    favicon_data = get_favicon(favicon_url)
-    if not favicon_data:
-        print("[!] Error!")
-        print(f"[-] No se pudo obtener el favicon desde {favicon_url}")
+    parsed_url = urlparse(sys.argv[1])
+    hostname = parsed_url.hostname
+    scheme = parsed_url.scheme
+    port = f":{parsed_url.port}" if parsed_url.port else ""
+    favicon_url = f"{scheme}://{hostname}{port}/favicon.ico"
+
+    session = requests.Session()
+    session.proxies = {
+        "http": PROXY,
+        "https": PROXY
+    }
+
+    favicon_data = get_favicon(favicon_url, session)
+    if favicon_data is None:
         sys.exit()
 
-    print(f"[+] Favicon data: {favicon_data}")
     favicon = codecs.encode(favicon_data, "base64")
-    print(f"[+] Encoded favicon: {favicon}")
     hash_favicon = mmh3.hash(favicon)
     print(f"[+] Favicon hash: {hash_favicon}")
 
-    # Realizar consulta a Shodan para encontrar hosts con el mismo favicon
-    api = shodan.Shodan(SHODAN_API_KEY)
-    query = f"http.favicon.hash:{hash_favicon}"
-    print(f"[+] Shodan query: {query}")
-    results = api.search(query)
-
-    # Obtener dirección IP real del host detrás de Cloudflare
-    for result in results["matches"]:
-        ip = result["ip_str"]
-        headers = {"Host": sys.argv[1]}
-        url = f"http://{ip}/favicon.ico"
-        try:
-            response = requests.get(url, headers=headers, verify=False, proxies={"http": "http://127.0.0.1:8080"})
-            print(f"[+] Response status code: {response.status_code}")
-            if response.status_code == 200 and response.content == favicon_data:
-                print(f"[+] Hostname: {sys.argv[1]}")
-                print(f"[+] IP address: {ip}")
-                break
-        except:
-            pass
-
-def get_favicon(favicon_url):
     try:
-        response = requests.get(favicon_url, verify=False, proxies={"http": "http://127.0.0.1:8080"})
-        print(f"[+] Response status code: {response.status_code}")
-        if response.status_code == 200:
-            return response.content
-    except:
-        pass
+        api = shodan.Shodan(SHODAN_API_KEY)
+        query = f"http.favicon.hash:{hash_favicon}"
+        print(f"[+] Shodan query: {query}")
+        results = api.search(query)
+        print("[+] Resultados de Shodan:", results)
+    except Exception as e:
+        print(f"[!] Error al buscar en Shodan: {e}")
+        sys.exit()
+
+    # Aquí puedes agregar código adicional para manejar los resultados de Shodan, si lo deseas.
 
 if __name__ == '__main__':
     main()
-
+             
