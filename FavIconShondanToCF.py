@@ -6,7 +6,7 @@ import shodan
 from urllib.parse import urlparse
 
 # Clave de API para Shodan y configuración del proxy
-SHODAN_API_KEY = "xPauT6WwgMaXt4uIXv25LATSEegLF6AE"
+SHODAN_API_KEY = "Aquí api key shodan"
 PROXY = "http://127.0.0.1:8080"  # Ajusta esta dirección a tu configuración de proxy
 
 def is_valid_url(url):
