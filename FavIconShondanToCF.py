@@ -1,3 +1,19 @@
+#Script de Python diseñado para hacer lo siguiente:
+# 1. Verifica que una URL proporcionada sea válida.
+# 2. Descarga el favicon de esa URL.
+# 3. Codifica el favicon en base64 y calcula su hash MurmurHash3.
+# 4. Usa el hash del favicon para buscar en Shodan por otros servicios web que usen el mismo favicon.
+# 5. Para usar el script correctamente, necesitas tener Python instalado en tu sistema, junto con las bibliotecas requests, codecs, sys, mmh3, shodan, y urllib. 
+# Aquí está el proceso general que debes seguir para ejecutar el script:
+# Asegúrate de que todas las dependencias estén instaladas. Si no lo están, puedes instalarlas usando pip (el gestor de paquetes de Python):
+# pip install requests mmh3 shodan
+# Asegúrate de que la clave API de Shodan que está en el script (key_shodan) sea válida y activa.
+# Asegúrate de que la configuración del proxy (http://192.168.1.87:8084) sea la correcta para tu red. Si no estás detrás de un proxy, puedes eliminar o comentar las líneas relevantes del script.
+# Guarda el script en tu computadora.
+# Ejecuta el script desde la línea de comandos, proporcionando la URL del sitio que quieres verificar:
+# python3 FavIconShondanToCF.py https://web-A-certificar.com
+
+
 import mmh3
 import requests
 import codecs
