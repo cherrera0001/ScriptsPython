@@ -8,8 +8,8 @@ import dns.resolver
 logging.basicConfig(level=logging.INFO)
 
 # Define aca las variables o claves para consumo de tus apis.
-SHODAN_API_KEY = "tu_clave_api_de_shodan"
-SECURITYTRAILS_API_KEY = "tu_clave_api_de_securitytrails"
+SHODAN_API_KEY = os.getenv("tu_clave_api_de_shodan")
+SECURITYTRAILS_API_KEY = os.getenv("tu_clave_api_de_securitytrails")
 
 
 def main():
