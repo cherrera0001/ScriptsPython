@@ -21,19 +21,9 @@ Ejemplo de Uso:
 python3 faviconfrenzy.py -u https://ejemplo.com -ak TU_CLAVE_SHODAN
 
 Ejemplo de resultado:
+![image](https://github.com/cherrera0001/ScriptsPython/assets/19656010/b026ff35-2685-416b-8c77-1fe8f82ccccb)
 
-INFO:root:Favicon encontrado en: https://ejemplo.com/favicon.ico
-INFO:root:url: https://ejemplo.com
-INFO:root:FavIconPath: https://ejemplo.com/favicon.ico
-INFO:root:hash: 123456789
-INFO:root:Clave Shodan almacenada con éxito
-Resultado 1:
-IP: 192.168.0.1
-Port: 80
-Hostnames: ['ejemplo.com']
-Location: {'country_name': 'United States', 'city': 'New York'}
-------------------------------------------------------------
-Possible real IP address: 203.0.113.5
+
 
 Requisitos:
 
