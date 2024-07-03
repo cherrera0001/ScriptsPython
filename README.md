@@ -35,7 +35,7 @@ En este repositorio iré dejando deversos script que pueden ser de utilidad de t
  - El script intenta resolver la IP real del dominio utilizando consultas DNS, lo cual puede no siempre ser exitoso dependiendo de las configuraciones del DNS y servicios de protección como Cloudflare.
 
 
-2. complete_scan.py
+2. domainSecurityScan.py
 
    Este script realiza un análisis completo de seguridad para un dominio especificado. Las funcionalidades clave incluyen:
 
@@ -49,7 +49,7 @@ En este repositorio iré dejando deversos script que pueden ser de utilidad de t
  
      export SHODAN_API_KEY="tu_clave_api_de_shodan"
      export SECURITYTRAILS_API_KEY="tu_clave_api_de_securitytrails"
-     python3 complete_scan.py -u https://ejemplo.com > result.txt
+     python3 domainSecurityScan.py -u https://ejemplo.com > result.txt
 
   
 
