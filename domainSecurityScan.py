@@ -7,6 +7,11 @@ import dns.resolver
 # Configuración inicial de logging
 logging.basicConfig(level=logging.INFO)
 
+# Define aca las variables o claves para consumo de tus apis.
+SHODAN_API_KEY = "tu_clave_api_de_shodan"
+SECURITYTRAILS_API_KEY = "tu_clave_api_de_securitytrails"
+
+
 def main():
     parser = argparse.ArgumentParser(prog='complete_scan', description='Realiza un análisis completo de seguridad para un dominio especificado.')
     parser.add_argument('-u', '--url',  type=str, required=True, help='Dominio para realizar el análisis.')
