@@ -35,4 +35,11 @@ Location: {'country_name': 'United States', 'city': 'New York'}
 ------------------------------------------------------------
 Possible real IP address: 203.0.113.5
 
-   
+Requisitos:
+
+pip install requests mmh3 shodan dnspython
+
+Notas:
+
+- Asegúrate de tener una clave API de Shodan válida.
+- El script intenta resolver la IP real del dominio utilizando consultas DNS, lo cual puede no siempre ser exitoso dependiendo de las configuraciones del DNS y servicios de protección como Cloudflare.
