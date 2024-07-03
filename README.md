@@ -21,9 +21,8 @@ Ejemplo de Uso:
 python3 faviconfrenzy.py -u https://ejemplo.com -ak TU_CLAVE_SHODAN
 
 Ejemplo de resultado:
+
 ![image](https://github.com/cherrera0001/ScriptsPython/assets/19656010/b026ff35-2685-416b-8c77-1fe8f82ccccb)
-
-
 
 Requisitos:
 
