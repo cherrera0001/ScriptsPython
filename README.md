@@ -10,14 +10,16 @@ En este repositorio iré dejando deversos script que pueden ser de utilidad de t
   - Utiliza el hash del favicon para buscar en Shodan posibles coincidencias y obtener información detallada sobre los servidores que usan el mismo favicon.
   - Intenta resolver la dirección IP real del dominio, incluso si está protegido por servicios como Cloudflare.
 
- Uso: 
+ 
  Parámetros
+ 
  -u, --url (requerido): URL para buscar el FavIcon.
  -ak, --addshodankey: Almacena o reemplaza la clave Shodan en el archivo de configuración.
  -t, --topresults: Número máximo de resultados a mostrar de Shodan (por defecto es 10).
 
  Ejemplo de Uso:
-   python3 faviconfrenzy.py -u https://ejemplo.com -ak TU_CLAVE_SHODAN
+ 
+    python3 faviconfrenzy.py -u https://ejemplo.com -ak TU_CLAVE_SHODAN
 
  Ejemplo de resultado:
 
