@@ -1,7 +1,7 @@
 import argparse
 import requests
 import logging
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 import codecs
 import mmh3
 import shodan
@@ -42,8 +42,9 @@ def main():
         try:
             with open(f'/tmp/{domain}_subdomains.txt', 'w') as f:
                 for sub in subdomains:
-                    f.write(sub + '\n')
-                    logging.info(sub)
+                    full_url = f"{sub}.{domain}"
+                    f.write(full_url + '\n')
+                    logging.info(full_url)
         except PermissionError:
             logging.error(f'No se puede escribir en /tmp/. Verifique los permisos de escritura.')
 
@@ -85,7 +86,7 @@ def get_subdomains(domain):
             response = requests.get(url, headers=headers)
             if response.status_code == 200:
                 data = response.json()
-                subdomains.update(data['subdomains'])
+                subdomains.update([f"{sub}.{domain}" for sub in data['subdomains']])
                 if not data.get('has_more'):
                     break
                 page += 1
@@ -119,9 +120,13 @@ def getFavIconPath(session, url):
         'Upgrade-Insecure-Requests': '1'
     }
     favicon_paths = ['', 'favicon.ico', 'html_public/favicon.ico']
+    parsed_url = urlparse(url)
+    scheme = parsed_url.scheme if parsed_url.scheme else 'https'
+    base_url = f"{scheme}://{parsed_url.netloc}"
+
     for path in favicon_paths:
         try:
-            icon_url = urljoin(url, path) if path else url
+            icon_url = urljoin(base_url, path)
             response = session.get(icon_url, headers=headers, timeout=10, verify=False)
             if response.status_code == 200:
                 logging.info(f'Favicon encontrado en: {icon_url}')
