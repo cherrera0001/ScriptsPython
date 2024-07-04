@@ -47,9 +47,7 @@ En este repositorio iré dejando deversos script que pueden ser de utilidad de t
    Ejemplo de uso:
     Para ejecutar el script, usa el siguiente comando, donde https://ejemplo.com es el dominio que quieres analizar:
  
-     export SHODAN_API_KEY="tu_clave_api_de_shodan"
-     export SECURITYTRAILS_API_KEY="tu_clave_api_de_securitytrails"
-     python3 domainSecurityScan.py -u https://ejemplo.com > result.txt
+         python3 domainSecurityScan.py -u https://ejemplo.com > result.txt
 
   
 
