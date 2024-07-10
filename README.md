@@ -17,9 +17,15 @@ En este repositorio iré dejando deversos script que pueden ser de utilidad de t
  -ak, --addshodankey: Almacena o reemplaza la clave Shodan en el archivo de configuración.
  -t, --topresults: Número máximo de resultados a mostrar de Shodan (por defecto es 10).
 
+ Necesario antes de usar:
+ 
+    pip install requests beautifulsoup4 pillow mmh3 shodan dnspython 
+ 
  Ejemplo de Uso:
+
  
     python3 faviconfrenzy.py -u https://ejemplo.com -ak TU_CLAVE_SHODAN
+    
 
  Ejemplo de resultado:
 
@@ -28,6 +34,7 @@ En este repositorio iré dejando deversos script que pueden ser de utilidad de t
  Requisitos:
 
    pip install requests mmh3 shodan dnspython
+  
 
  Notas:
 
