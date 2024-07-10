@@ -2,64 +2,129 @@ import argparse
 import configparser
 import requests
 import logging
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 import codecs
 import mmh3
 import shodan
 import dns.resolver
+from bs4 import BeautifulSoup
+from PIL import Image
+from io import BytesIO
 
 # Configuración inicial de logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(filename='faviconfrenzy.log', level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)s:%(message)s')
 
 def main():
     parser = argparse.ArgumentParser(prog='faviconfrenzy', description='Busca el favicon de una URL proporcionada, calcula su hash y lo envía a Shodan para análisis.')
-    parser.add_argument('-u', '--url',  type=str, required=True, help='URL para buscar el FavIcon.')
+    parser.add_argument('-u', '--url', type=str, required=True, help='URL para buscar el FavIcon.')
     parser.add_argument('-ak', '--addshodankey', dest='shodankey', type=str, help='Almacena o reemplaza la clave Shodan en el archivo de configuración.')
     parser.add_argument('-t', '--topresults', type=int, default=10, help='Número máximo de resultados a mostrar, por defecto es 10.')
     parametros = parser.parse_args()
 
+    # Agregar esquema por defecto si falta
+    url = parametros.url
+    if not urlparse(url).scheme:
+        url = 'http://' + url
+
     session = requests.Session()  # Uso de sesiones para optimizar las solicitudes HTTP
-    absoluteIconPath = getFavIconPath(session, parametros.url)
-    if absoluteIconPath:
-        logging.info(f'url: {parametros.url}')
-        logging.info(f'FavIconPath: {absoluteIconPath}')
-        favicon, hash = getfavicon(absoluteIconPath)
-        if hash:
-            logging.info(f'hash: {hash}')
-            if parametros.shodankey:
-                store_shodan_key(parametros.shodankey)
-            shodanQuery(hash, parametros.topresults, session)
-            discover_real_ip(parametros.url)
-        else:
-            logging.warning('No se encontró favicon.')
+    icon_paths = get_favicon_paths(session, url)
+    if icon_paths:
+        for path in icon_paths:
+            if verify_favicon(session, path):
+                logging.info(f'Favicon encontrado en: {path}')
+                favicon, hash = get_favicon(session, path)
+                if hash:
+                    logging.info(f'hash: {hash}')
+                    if parametros.shodankey:
+                        store_shodan_key(parametros.shodankey)
+                    shodan_query(hash, parametros.topresults)
+                    discover_real_ip(url)
+                    break
+                else:
+                    logging.warning('No se encontró hash para el favicon.')
     else:
         logging.warning('No se encontró favicon.')
 
-def getFavIconPath(session, url):
-    headers = {
-        'User-Agent': 'Mozilla/5.0',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'es-ES,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1'
-    }
-    favicon_paths = ['', 'favicon.ico', 'html_public/favicon.ico']
-    for path in favicon_paths:
-        try:
-            icon_url = urljoin(url, path) if path else url
-            response = session.get(icon_url, headers=headers, timeout=10)
-            if response.status_code == 200:
-                logging.info(f'Favicon encontrado en: {icon_url}')
-                return icon_url
-        except requests.RequestException as e:
-            logging.error(f'Error al obtener favicon: {e}')
-    logging.warning('No se encontró favicon en las rutas probadas')
-    return None
+def get_favicon_paths(session, url):
+    """
+    Obtiene las posibles rutas de favicons desde una URL.
 
-def getfavicon(absoluteIconPath):
+    Args:
+        session (requests.Session): La sesión de requests.
+        url (str): La URL del sitio web.
+
+    Returns:
+        list: Lista de posibles URLs de favicons.
+    """
+    headers = {'User-Agent': 'Mozilla/5.0'}
     try:
-        response = requests.get(absoluteIconPath, timeout=10)
+        response = session.get(url, headers=headers, timeout=10)
+        response.raise_for_status()  # Asegurar que se lanza una excepción para errores HTTP
+    except requests.RequestException as e:
+        logging.error(f'Error al obtener la página principal: {e}')
+        return []
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    icon_paths = set()
+    for link in soup.find_all('link', rel=['icon', 'shortcut icon', 'apple-touch-icon']):
+        if 'href' in link.attrs:
+            icon_paths.add(urljoin(url, link['href']))
+
+    # Agregar rutas comunes y variaciones de favicons
+    common_paths = [
+        'favicon.ico', 'FAVICON.ICO', 'favicon.svg', 'FAVICON.SVG', 'favicon-512.png', 'favicon-512.PNG',
+        'favicon-192.png', 'favicon-192.PNG', 'apple-touch-icon.png', 'apple-touch-icon.PNG',
+        'static/favicon.ico', 'static/FAVICON.ICO', 'static/favicon.svg', 'static/FAVICON.SVG',
+        'static/favicon-512.png', 'static/FAVICON-512.PNG', 'static/favicon-192.png', 'static/FAVICON-192.PNG',
+        'static/apple-touch-icon.png', 'static/APPLE-TOUCH-ICON.PNG', 'assets/img/favicon.ico', 'assets/img/FAVICON.ICO',
+        'assets/img/favicon.svg', 'assets/img/FAVICON.SVG', 'assets/img/favicon-512.png', 'assets/img/FAVICON-512.PNG',
+        'assets/img/favicon-192.png', 'assets/img/FAVICON-192.PNG', 'assets/img/apple-touch-icon.png', 'assets/img/APPLE-TOUCH-ICON.PNG'
+    ]
+
+    for path in common_paths:
+        icon_paths.add(urljoin(url, path))
+
+    return list(icon_paths)
+
+def verify_favicon(session, icon_url):
+    """
+    Verifica si el archivo en la URL proporcionada es un favicon válido.
+
+    Args:
+        session (requests.Session): La sesión de requests.
+        icon_url (str): La URL del posible favicon.
+
+    Returns:
+        bool: True si el archivo es un favicon válido, False en caso contrario.
+    """
+    try:
+        response = session.get(icon_url, timeout=10)
+        response.raise_for_status()  # Asegurar que se lanza una excepción para errores HTTP
+        img = Image.open(BytesIO(response.content))
+        if img.format in ['ICO', 'PNG', 'SVG']:
+            logging.info(f'Favicon válido encontrado en: {icon_url}')
+            return True
+        return False
+    except Exception as e:
+        logging.error(f'Error al verificar favicon: {e}')
+        return False
+
+def get_favicon(session, absoluteIconPath):
+    """
+    Obtiene el favicon desde la URL proporcionada y calcula su hash.
+
+    Args:
+        session (requests.Session): La sesión de requests.
+        absoluteIconPath (str): La URL del favicon.
+
+    Returns:
+        tuple: Contenido del favicon en base64 y su hash.
+    """
+    try:
+        response = session.get(absoluteIconPath, timeout=10)
+        response.raise_for_status()  # Asegurar que se lanza una excepción para errores HTTP
         favicon = codecs.encode(response.content, 'base64')
         hash = mmh3.hash(favicon)
         return favicon, hash
@@ -67,7 +132,14 @@ def getfavicon(absoluteIconPath):
         logging.error(f'Error al obtener hash de favicon: {e}')
         return None, None
 
-def shodanQuery(hash, topresults, session):
+def shodan_query(hash, topresults):
+    """
+    Realiza una consulta a Shodan utilizando el hash del favicon.
+
+    Args:
+        hash (int): El hash del favicon.
+        topresults (int): Número máximo de resultados a mostrar.
+    """
     api_key = get_shodan_key()
     if api_key:
         api = shodan.Shodan(api_key)
@@ -90,6 +162,12 @@ def shodanQuery(hash, topresults, session):
         logging.warning('Clave API de Shodan no encontrada')
 
 def discover_real_ip(url):
+    """
+    Descubre la IP real detrás de un dominio.
+
+    Args:
+        url (str): La URL del sitio web.
+    """
     domain = url.split("//")[-1].split("/")[0]
     try:
         answers = dns.resolver.resolve(domain, 'A')
@@ -105,6 +183,12 @@ def discover_real_ip(url):
         logging.error(f'Error al buscar IP real: {e}')
 
 def store_shodan_key(shodankey):
+    """
+    Almacena la clave API de Shodan en un archivo de configuración.
+
+    Args:
+        shodankey (str): La clave API de Shodan.
+    """
     config = configparser.ConfigParser()
     config['SHODAN'] = {'key': shodankey}
     try:
@@ -115,6 +199,12 @@ def store_shodan_key(shodankey):
         logging.error(f'Error al almacenar clave Shodan: {e}')
 
 def get_shodan_key():
+    """
+    Obtiene la clave API de Shodan desde el archivo de configuración.
+
+    Returns:
+        str: La clave API de Shodan, o None si no se encuentra.
+    """
     config = configparser.ConfigParser()
     try:
         config.read('faviconfrenzy.ini')
@@ -125,4 +215,3 @@ def get_shodan_key():
 
 if __name__ == '__main__':
     main()
-                                                   
