@@ -83,4 +83,87 @@ En este repositorio iré dejando deversos script que pueden ser de utilidad de t
    - Este proceso te ayudará a identificar otros servicios web que compartan el mismo favicon, lo que puede ser útil en tareas de reconocimiento y análisis de seguridad.
 
 
+  ---------------------------------------------------------------------------------------------------------------------------
+  4. RequestSlow.py
+     Este script está diseñado para realizar pruebas de ataques de DDoS (Denegación de Servicio Distribuido) utilizando diferentes métodos como HTTP, TCP y UDP. Las principales funcionalidades del script incluyen:
+
+   - Configuración y envío de solicitudes HTTP para mantener vivos los sockets.
+   - Realización de inundaciones TCP y UDP para simular ataques de DDoS.
+   - Uso de múltiples hilos (threads) para enviar múltiples paquetes simultáneamente.
+   - Configuración de intervalos y límites de tasa para las solicitudes HTTP.
+
+   ¿Cómo usar el script?
+    Asegúrate de tener Python instalado en tu sistema. Guarda el script en tu computadora. Ejecuta el script desde la línea de comandos proporcionando los parámetros adecuados. 
+    Ejemplo de uso:
+                   
+            python3 ddos_test.py <ip_objetivo> <puerto_objetivo> --http --tcp --udp --socket_count 100 --thread_count 10 --duration 120 --packet_size 1024 --timer 10 --rate_limit 5
+        
+Los parámetros que puedes configurar son:
+
+   ip: Dirección IP del objetivo.
+   port: Número de puerto del objetivo.
+   --http: Activa el ataque de inundación HTTP.
+   --tcp: Activa el ataque de inundación TCP.
+   --udp: Activa el ataque de inundación UDP.
+   --socket_count: Número de sockets a usar para la inundación HTTP.
+   --thread_count: Número de hilos para la inundación TCP/UDP.
+   --duration: Duración de la inundación TCP/UDP en segundos.
+   --packet_size: Tamaño de los paquetes TCP/UDP en bytes.
+   --timer: Intervalo en segundos entre señales de keep-alive.
+   --rate_limit: Límite de tasa para las solicitudes HTTP por segundo.
+   
+   El script registrará la información relevante y errores durante su ejecución para monitorear el progreso y solucionar problemas.
+   
+   Importante: Este script es solo para fines educativos y de prueba en entornos controlados y con el consentimiento del propietario del objetivo. El uso indebido de este script para realizar ataques de DDoS en sistemas no autorizados es ilegal.
+   
+   ---------------------------------------------------------------------------------------------------------------------------
+ 5. scanNet.sh
+
+   Este script de Shell está diseñado para realizar un escaneo de puertos en un rango de direcciones IP dentro de una red local. 
+   Utiliza nc (netcat) para comprobar la respuesta de los puertos y parallel para ejecutar múltiples tareas en paralelo, mejorando la eficiencia del escaneo. Detecta servicios comunes como HTTP, SSH y SMTP.
+
+   Instalación:
+
+    sudo apt-get install parallel netcat
+
+   Dar persmisos de ejecución:
   
+     chmod +x scanNet.sh
+
+   Ejecutar:
+  
+      ./scanNet.sh
+
+   - check_service: Función que determina el tipo de servicio basado en la respuesta obtenida del puerto.
+   - scan_ip_port: Función que escanea un puerto específico en una IP determinada y llama a check_service para identificar el servicio.
+   - Ejecución en paralelo: El script utiliza parallel para ejecutar scan_ip_port en múltiples combinaciones de IPs y puertos simultáneamente, escaneando eficientemente todo el rango especificado.
+   - Parámetros de red: ip_base define la subred a escanear, mientras que port_range_start y port_range_end definen el rango de puertos a escanear.
+   - ip_base: Define la subred a escanear (e.g., "192.168.1").
+   - port_range_start y port_range_end: Definen el rango de puertos a escanear (del 1 al 1024).
+   - 
+---------------------------------------------------------------------------------------------------------------------------
+   
+   6. scanNet.py
+    
+   Este script está diseñado para escanear puertos en un rango de direcciones IP dentro de una red local.
+   Utiliza múltiples procesos para mejorar la eficiencia del escaneo y detectar servicios comunes como HTTP, SSH y SMTP.
+   Aquí se explican sus componentes   principales y cómo usarlo.
+
+   Instalación necesaria:
+
+         pip install tqdm
+
+   Ejecución:
+    
+         python3 port_scanner.py
+
+
+   - Función check_service: Esta función separa la lógica de identificación del servicio, mejorando la claridad del código.
+   - Función scan_ip_port: Esta función maneja el escaneo de un puerto específico en una IP dada, incluyendo el manejo de excepciones específicas para socket.timeout y socket.error.
+   - Función scan_port: Esta función recorre el rango de IPs para un puerto dado, llamando a scan_ip_port.
+   - Uso de tqdm: Ahora tqdm se usa para mostrar el progreso del escaneo de puertos, lo que proporciona una retroalimentación visual clara del progreso del script.
+   - ip_base: Define la subred a escanear (e.g., "192.168.1.").
+   - port_range: Define el rango de puertos a escanear (del 1 al 1024).
+   - ip_range: Define el rango de IPs dentro de la subred a escanear (del 1 al 254).
+   - timeout: Tiempo de espera para cada intento de conexión.
+
