@@ -140,7 +140,7 @@ Los parámetros que puedes configurar son:
    - Parámetros de red: ip_base define la subred a escanear, mientras que port_range_start y port_range_end definen el rango de puertos a escanear.
    - ip_base: Define la subred a escanear (e.g., "192.168.1").
    - port_range_start y port_range_end: Definen el rango de puertos a escanear (del 1 al 1024).
-   - 
+
 ---------------------------------------------------------------------------------------------------------------------------
    
    6. scanNet.py
