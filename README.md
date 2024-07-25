@@ -1,6 +1,6 @@
 # ScriptsPython
 
-En este repositorio iré dejando deversos script que pueden ser de utilidad de todos.
+En este repositorio iré dejando diversos script que pueden ser de utilidad de todos.
 
 1. FaviconFrenzy.py
  FaviconFrenzy es un script en Python diseñado para buscar el favicon de una URL proporcionada, calcular su hash y enviarlo a shodan para su análisis. Además, el script puede descubrir la dirección IP real detrás de servicios de protección como Cloudflare.
